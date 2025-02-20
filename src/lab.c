@@ -1,4 +1,6 @@
-/**Update this file with the starter code**/
+#include <stdio.h>
+#include <string.h>
+#include "lab.h"
 
 char *get_prompt(const char *env) {
 }
@@ -29,7 +31,7 @@ char *trim_white(char *line) {
 		i--;
 	}
 
-	return line
+	return line;
 }
 
 bool do_builtin(struct shell *sh, char **argv){
