@@ -257,4 +257,6 @@ void sh_destroy(struct shell *sh)
 
 void parse_args(int argc, char **argv)
 {
+    argc = argc;
+    argv = argv;
 }

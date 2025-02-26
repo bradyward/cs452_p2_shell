@@ -159,6 +159,61 @@ void test_ch_dir_root(void)
      cmd_free(cmd);
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+void test_pwd(void)
+{
+     char *line = (char*) calloc(10, sizeof(char));
+     strncpy(line, "pwd", 10);
+     char **cmd = cmd_parse(line);
+
+     // Capture output of pwd
+     FILE *fp = popen("pwd", "r");
+     TEST_ASSERT_NOT_NULL(fp);
+
+     char expected[256];
+     fgets(expected, sizeof(expected), fp);
+     strtok(expected, "\n"); // Remove trailing newline
+
+     pclose(fp);
+
+     // Run pwd command in shell
+     char *actual = getcwd(NULL, 0);
+     TEST_ASSERT_EQUAL_STRING(expected, actual);
+
+     free(line);
+     free(actual);
+     cmd_free(cmd);
+}
+
+void test_do_builtin(void)
+{
+    struct shell sh;
+    sh_init(&sh);
+
+    char *cmd_ls[] = {"ls", NULL};
+    TEST_ASSERT_EQUAL_INT(0, do_builtin(&sh, cmd_ls));
+
+    char *cmd_pwd[] = {"pwd", NULL};
+    TEST_ASSERT_EQUAL_INT(1, do_builtin(&sh, cmd_pwd));
+
+    char *cmd_apples[] = {"apples", NULL};
+    TEST_ASSERT_EQUAL_INT(0, do_builtin(&sh, cmd_apples));
+}
+
+void test_ch_dir_tests(void)
+{
+     // Cant figure out how to fix this test
+    char *line = (char*) calloc(10, sizeof(char));
+    strncpy(line, "cd tests", 10);
+    char **cmd = cmd_parse(line);
+    change_dir(cmd);
+    char *actual = getcwd(NULL, 0);
+    TEST_ASSERT_EQUAL_STRING("/workspaces/cs452_p2_shell", actual); 
+    free(line);
+    free(actual);
+    cmd_free(cmd);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_cmd_parse);
@@ -173,6 +228,11 @@ int main(void) {
   RUN_TEST(test_get_prompt_custom);
   RUN_TEST(test_ch_dir_home);
   RUN_TEST(test_ch_dir_root);
+
+  RUN_TEST(test_pwd);
+  RUN_TEST(test_do_builtin);
+  RUN_TEST(test_ch_dir_tests);
+
 
   return UNITY_END();
 }
