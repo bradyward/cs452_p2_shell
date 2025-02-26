@@ -7,14 +7,16 @@
 #include "lab.h"
 #include <signal.h>
 
-char *get_prompt(const char *env) // Mostly done I think
+char *get_prompt(const char *env) 
 {
+    // Attempt to get a prompt. If one isn't given, default to "shell>"
     char *prompt = getenv(env);
     if (prompt == NULL)
     {
         prompt = "shell>";
     }
 
+    // Copy the prompt and return it
     char *final_prompt = malloc(strlen(prompt) + 1);
     if (final_prompt == NULL)
     {
@@ -25,7 +27,7 @@ char *get_prompt(const char *env) // Mostly done I think
     return final_prompt;
 }
 
-int change_dir(char **dir) /////////////////////////
+int change_dir(char **dir)
 {
     // If dir is not set, or there is no directory provided, change to home
     if (dir == NULL || dir[1] == NULL)
@@ -43,11 +45,8 @@ int change_dir(char **dir) /////////////////////////
 
 
 
-char **cmd_parse(char const *line) // 0 clue if this works lol. Should be pretty good though
+char **cmd_parse(char const *line) 
 {
-    // 2 Mallocs 
-    // 1 Free. Other malloc is returned by the function
-
     if (line == NULL) {
         return NULL;
     }
@@ -104,6 +103,7 @@ char **cmd_parse(char const *line) // 0 clue if this works lol. Should be pretty
             break;
         }
 
+        // Add the token to arguments
         arguments[index] = strdup(token);
         if (arguments[index] == NULL)
         {
@@ -139,7 +139,7 @@ void cmd_free(char **line)
     line = NULL;
 }
 
-char *trim_white(char *line) ////////// TESTED AND WORKS !!!!!
+char *trim_white(char *line)
 {
     // Make a copy of the line to trim
     int lineLength = strlen(line);
@@ -170,40 +170,33 @@ char *trim_white(char *line) ////////// TESTED AND WORKS !!!!!
     return copy;
 }
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include "lab.h"
-
-bool do_builtin(struct shell *sh, char **args)
+bool do_builtin(struct shell *sh, char **argv)
 {
-    if (args == NULL || args[0] == NULL)
+    if (argv == NULL || argv[0] == NULL)
     {
-        return 0; // No command given, not a built-in
+        return 0;
     }
 
-    if (strcmp(args[0], "exit") == 0)
+    if (strcmp(argv[0], "exit") == 0)
     {
         sh_destroy(sh);
-        cmd_free(args);
+        cmd_free(argv);
         exit(0);
     }
-    else if (strcmp(args[0], "cd") == 0)
+    else if (strcmp(argv[0], "cd") == 0)
     {
-        if (args[1] == NULL)
+        if (argv[1] == NULL)
         {
             fprintf(stderr, "cd: missing argument\n");
-            return 1; // Built-in command handled
+            return 1;
         }
-        if (chdir(args[1]) != 0)
+        if (chdir(argv[1]) != 0)
         {
             perror("cd");
         }
         return 1;
     }
-    else if (strcmp(args[0], "pwd") == 0)
+    else if (strcmp(argv[0], "pwd") == 0)
     {
         char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) != NULL)
@@ -217,14 +210,13 @@ bool do_builtin(struct shell *sh, char **args)
         return 1;
     }
 
-    return 0; // Not a built-in command
+    return 0;
 }
 
 
-void sh_init(struct shell *sh) //////// Pulled directly from man page. Should work
+void sh_init(struct shell *sh) 
 {
-    /* See if we are running interactively.  */
-    // sh->shell_terminal = NULL; // STDIN_FILENO;
+    // This was ripped directly from the man page
     sh->shell_is_interactive = isatty(sh->shell_terminal);
 
     if (sh->shell_is_interactive)
@@ -257,23 +249,8 @@ void sh_init(struct shell *sh) //////// Pulled directly from man page. Should wo
     }
 }
 
-void sh_destroy(struct shell *sh) // ???
+void sh_destroy(struct shell *sh)
 {
-    // Total mallocs: 3 :
-    // // A: Value returned from get_prompt
-    // // B: Value returns from cmd_parse
-    // // C: Value returned from trim_white
-
-    // Total frees: 1 :
-    // // A must be freed in this file. Likely in sh_destroy or the end of whatever calls it
-    // // B is freed in cmd_free
-    // // C is already freed by main.c
-
-    // sh->shell_is_interactive = NULL;
-    // sh->shell_pgid = NULL;
-    // sh->shell_tmodes; // IDK what to do with this
-    // sh->shell_terminal = NULL;
-
     free(sh->prompt);
     sh->prompt = NULL;
 }
