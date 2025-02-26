@@ -12,7 +12,7 @@ char *get_prompt(const char *env) // Mostly done I think
     char *prompt = getenv(env);
     if (prompt == NULL)
     {
-        prompt = "Shell> ";
+        prompt = "shell>";
     }
 
     char *final_prompt = malloc(strlen(prompt) + 1);
