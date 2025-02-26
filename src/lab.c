@@ -10,10 +10,9 @@
 char *get_prompt(const char *env) // Mostly done I think
 {
     char *prompt = getenv(env);
-
     if (prompt == NULL)
     {
-        return strdup("Shell> ");
+        prompt = "Shell> ";
     }
 
     char *final_prompt = malloc(strlen(prompt) + 1);
@@ -155,11 +154,11 @@ char *trim_white(char *line) ////////// TESTED AND WORKS !!!!!
     // Find the new front / back of the string
     int front = 0;
     int back = lineLength - 1;
-    while (front < lineLength && isspace(line[front]))
+    while (front < lineLength && line[front] == ' ')
     {
         front++;
     }
-    while (back > front && isspace(line[back]))
+    while (back > front && line[back] == ' ')
     {
         back--;
     }
@@ -171,14 +170,61 @@ char *trim_white(char *line) ////////// TESTED AND WORKS !!!!!
     return copy;
 }
 
-bool do_builtin(struct shell *sh, char **argv)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include "lab.h"
+
+bool do_builtin(struct shell *sh, char **args)
 {
+    if (args == NULL || args[0] == NULL)
+    {
+        return 0; // No command given, not a built-in
+    }
+
+    if (strcmp(args[0], "exit") == 0)
+    {
+        sh_destroy(sh);
+        cmd_free(args);
+        exit(0);
+    }
+    else if (strcmp(args[0], "cd") == 0)
+    {
+        if (args[1] == NULL)
+        {
+            fprintf(stderr, "cd: missing argument\n");
+            return 1; // Built-in command handled
+        }
+        if (chdir(args[1]) != 0)
+        {
+            perror("cd");
+        }
+        return 1;
+    }
+    else if (strcmp(args[0], "pwd") == 0)
+    {
+        char cwd[1024];
+        if (getcwd(cwd, sizeof(cwd)) != NULL)
+        {
+            printf("%s\n", cwd);
+        }
+        else
+        {
+            perror("pwd");
+        }
+        return 1;
+    }
+
+    return 0; // Not a built-in command
 }
+
 
 void sh_init(struct shell *sh) //////// Pulled directly from man page. Should work
 {
     /* See if we are running interactively.  */
-    sh->shell_terminal = NULL; // STDIN_FILENO;
+    // sh->shell_terminal = NULL; // STDIN_FILENO;
     sh->shell_is_interactive = isatty(sh->shell_terminal);
 
     if (sh->shell_is_interactive)
@@ -223,10 +269,10 @@ void sh_destroy(struct shell *sh) // ???
     // // B is freed in cmd_free
     // // C is already freed by main.c
 
-    sh->shell_is_interactive = NULL;
-    sh->shell_pgid = NULL;
-    sh->shell_tmodes; // IDK what to do with this
-    sh->shell_terminal = NULL;
+    // sh->shell_is_interactive = NULL;
+    // sh->shell_pgid = NULL;
+    // sh->shell_tmodes; // IDK what to do with this
+    // sh->shell_terminal = NULL;
 
     free(sh->prompt);
     sh->prompt = NULL;
