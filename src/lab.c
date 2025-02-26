@@ -185,16 +185,10 @@ bool do_builtin(struct shell *sh, char **argv)
     }
     else if (strcmp(argv[0], "cd") == 0)
     {
-        if (argv[1] == NULL)
-        {
-            fprintf(stderr, "cd: missing argument\n");
+        if (change_dir(argv) == 0) {
             return 1;
         }
-        if (chdir(argv[1]) != 0)
-        {
-            perror("cd");
-        }
-        return 1;
+        perror("cd");
     }
     else if (strcmp(argv[0], "pwd") == 0)
     {
