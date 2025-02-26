@@ -13,8 +13,7 @@ char *get_prompt(const char *env) // Mostly done I think
 
     if (prompt == NULL)
     {
-        // ??? Does this nned a malloc ???
-        return "Shell> ";
+        return strdup("Shell> ");
     }
 
     char *final_prompt = malloc(strlen(prompt) + 1);
@@ -43,48 +42,102 @@ int change_dir(char **dir) /////////////////////////
     return chdir(dir[1]);
 }
 
-char **cmd_parse(char const *line) // 0 clue if this works lol
+
+
+char **cmd_parse(char const *line) // 0 clue if this works lol. Should be pretty good though
 {
+    // 2 Mallocs 
+    // 1 Free. Other malloc is returned by the function
+
+    if (line == NULL) {
+        return NULL;
+    }
+
+    // Find max argument length. Default to 4096 if sysconf fails
     long arg_max = sysconf(_SC_ARG_MAX);
-    char **arguments = (char **)malloc(sizeof(char *) * arg_max);
+    if (arg_max <= 0) {
+        arg_max = 4096;
+    }
+
+    // Count the number of arguments, ensuring their combined length doesn't exceed the maximum
+    int word_count = 1; // Account for initial argument. Represents numbers of arguments
+    int char_count = 0; // Should represent the number of characters in the arguments. Used for malloc below
+    int hit_space = 0;
+    for (int i = 0; line[i] != '\0' && char_count < arg_max; i++) {
+        if (line[i] == ' ') {
+            hit_space = 1;
+        } 
+        else if (hit_space) {
+            char_count++;
+            hit_space = 0;
+            word_count++;
+        }
+        else {
+            char_count++;
+        }
+    }
+
+    // Allocate memory for all arguments
+    char **arguments = (char **)malloc(sizeof(char *) * (char_count + 1));
     if (arguments == NULL)
     {
         fprintf(stderr, "Error: malloc failed\n");
         return NULL;
     }
-    // Find total amount of arguments
-    int count = 0;
-    for (int i = 0; i < strlen(line); i++)
-    {
-        if (line[i] == ' ')
-        {
-            count++;
-        }
-    }
-
-    // Point arguments to a list of char pointers
-    char *argument[count + 1];
-    **arguments = argument;
 
     // Add all arguments to the list
     // Copying the string is needed so strtok doesn't modify the original
-    char *copy = strdup(line);
+    char *copy = strdup(line); // This mallocs
+    if (copy == NULL)
+    {
+        free(arguments);
+        fprintf(stderr, "Error: malloc failed\n");
+        return NULL;
+    }
+
     char *token = strtok(copy, " ");
     int index = 0;
     while (token != NULL)
     {
-        argument[index] = token;
+        // If we attempt to add too many args, stop and return
+        if (index >= word_count)
+        {
+            break;
+        }
+
+        arguments[index] = strdup(token);
+        if (arguments[index] == NULL)
+        {
+            cmd_free(arguments);
+            free(copy);
+            fprintf(stderr, "Error: malloc failed\n");
+            return NULL;
+        }
         index++;
         token = strtok(NULL, " ");
     }
     // Must be null terminated
-    argument[index] = NULL;
+    arguments[index] = NULL;
 
+    free(copy); // Free for copy's malloc
     return arguments;
 }
 
 void cmd_free(char **line)
 {
+    if (line == NULL)
+    {
+        return;
+    }
+
+    // Free all elements of the array first
+    for (int i = 0; line[i] != NULL; i++)
+    {
+        free(line[i]);
+        line[i] = NULL;
+    }
+    free(line);
+    line = NULL;
 }
 
 char *trim_white(char *line) ////////// TESTED AND WORKS !!!!!
@@ -122,7 +175,7 @@ bool do_builtin(struct shell *sh, char **argv)
 {
 }
 
-void sh_init(struct shell *sh) // ???
+void sh_init(struct shell *sh) //////// Pulled directly from man page. Should work
 {
     /* See if we are running interactively.  */
     sh->shell_terminal = NULL; // STDIN_FILENO;
@@ -167,8 +220,9 @@ void sh_destroy(struct shell *sh) // ???
 
     // Total frees: 1 :
     // // A must be freed in this file. Likely in sh_destroy or the end of whatever calls it
-    // // B must be freed in cmd_free
+    // // B is freed in cmd_free
     // // C is already freed by main.c
+
     sh->shell_is_interactive = NULL;
     sh->shell_pgid = NULL;
     sh->shell_tmodes; // IDK what to do with this
